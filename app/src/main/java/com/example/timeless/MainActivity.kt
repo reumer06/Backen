@@ -39,7 +39,7 @@ import com.example.timeless.ui.theme.TimeLESSTheme
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDateTime
-import java.time.ZoneOffset
+import java.time.ZoneId
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,9 +77,12 @@ fun MainScreen(
         )
     } else {
         LaunchedEffect(targetDateTime) {
+            viewModel.updateTimeDifference()
             while (true) {
+                val nowMs = System.currentTimeMillis()
+                val delayMs = 1000 - (nowMs % 1000)
+                delay(delayMs)
                 viewModel.updateTimeDifference()
-                delay(1000)
             }
         }
 
@@ -132,10 +135,11 @@ fun DateSelectionScreen(
     targetDateTime: LocalDateTime?,
     onDateSelected: () -> Unit = {}
 ) {
+    val deviceZone = ZoneId.systemDefault()
     val initialSelectedDateMillis = remember(targetDateTime) {
         targetDateTime
             ?.toLocalDate()
-            ?.atStartOfDay(ZoneOffset.UTC)
+            ?.atStartOfDay(deviceZone)
             ?.toInstant()
             ?.toEpochMilli()
     }
@@ -165,7 +169,7 @@ fun DateSelectionScreen(
                     val selectedMillis = datePickerState.selectedDateMillis
                     if (selectedMillis != null) {
                         val instant = Instant.ofEpochMilli(selectedMillis)
-                        val selectedDate = instant.atZone(ZoneOffset.UTC).toLocalDate()
+                        val selectedDate = instant.atZone(deviceZone).toLocalDate()
                         val selectedDateTime = selectedDate.atTime(23, 59, 59)
                         viewModel.setTargetDateTime(selectedDateTime)
                         viewModel.updateTimeDifference()
