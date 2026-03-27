@@ -27,6 +27,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,16 +38,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.timeless.ui.theme.TimeLESSTheme
 import kotlinx.coroutines.delay
 import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.ZoneId
+import java.time.ZoneOffset
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            var isDarkMode by remember { mutableStateOf(false) }
+            val systemDarkMode = androidx.compose.foundation.isSystemInDarkTheme()
+            var isDarkMode by rememberSaveable { mutableStateOf(systemDarkMode) }
             TimeLESSTheme(darkTheme = isDarkMode) {
                 MainScreen(
                     isDarkMode = isDarkMode,
@@ -71,6 +72,7 @@ fun MainScreen(
     if (showDatePicker || targetDateTime == null) {
         DateSelectionScreen(
             viewModel = viewModel,
+            targetDateTime = targetDateTime,
             onDateSelected = { showDatePicker = false }
         )
     } else {
@@ -127,9 +129,17 @@ fun MainScreen(
 @Composable
 fun DateSelectionScreen(
     viewModel: TimerViewModel,
+    targetDateTime: LocalDateTime?,
     onDateSelected: () -> Unit = {}
 ) {
-    val datePickerState = rememberDatePickerState()
+    val initialSelectedDateMillis = remember(targetDateTime) {
+        targetDateTime
+            ?.toLocalDate()
+            ?.atStartOfDay(ZoneOffset.UTC)
+            ?.toInstant()
+            ?.toEpochMilli()
+    }
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialSelectedDateMillis)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -154,10 +164,9 @@ fun DateSelectionScreen(
                 onClick = {
                     val selectedMillis = datePickerState.selectedDateMillis
                     if (selectedMillis != null) {
-                        val istZone = ZoneId.of("Asia/Kolkata")
                         val instant = Instant.ofEpochMilli(selectedMillis)
-                        val selectedDateInIST = instant.atZone(istZone).toLocalDate()
-                        val selectedDateTime = selectedDateInIST.atTime(23, 59, 59)
+                        val selectedDate = instant.atZone(ZoneOffset.UTC).toLocalDate()
+                        val selectedDateTime = selectedDate.atTime(23, 59, 59)
                         viewModel.setTargetDateTime(selectedDateTime)
                         viewModel.updateTimeDifference()
                         onDateSelected()

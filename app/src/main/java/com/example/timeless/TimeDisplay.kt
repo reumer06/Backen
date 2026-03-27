@@ -2,7 +2,6 @@ package com.example.timeless
 
 import java.time.LocalDateTime
 import java.time.Duration
-import java.time.temporal.ChronoUnit
 
 data class TimeDisplay(
     val years: Long = 0,

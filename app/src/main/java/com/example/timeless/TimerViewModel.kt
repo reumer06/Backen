@@ -13,7 +13,7 @@ class TimerViewModel : ViewModel() {
     private val _targetDateTime = MutableStateFlow<LocalDateTime?>(null)
     val targetDateTime: StateFlow<LocalDateTime?> = _targetDateTime
 
-    private val istZone = ZoneId.of("Asia/Kolkata")
+    private val deviceZone = ZoneId.systemDefault()
 
     fun setTargetDateTime(dateTime: LocalDateTime) {
         _targetDateTime.value = dateTime
@@ -22,7 +22,7 @@ class TimerViewModel : ViewModel() {
     fun updateTimeDifference() {
         val target = _targetDateTime.value
         if (target != null) {
-            val now = LocalDateTime.now(istZone)
+            val now = LocalDateTime.now(deviceZone)
             _timeDisplay.value = calculateTimeDisplay(now, target)
         }
     }
