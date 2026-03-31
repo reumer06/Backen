@@ -1,27 +1,47 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-
-# Android build outputs
+# Gradle
+.gradle/
+build/
 *.apk
-*.ap_
 *.aab
-output.json
 
-# Signing files / local secrets
-*.jks
-*.keystore
+# IDE - Android Studio
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+
+# Local configuration
+/local.properties
 keystore.properties
 
-/.idea
+# Signing and secrets
+*.jks
+*.keystore
+*.key
+
+# Build output
+/captures
+output.json
+.externalNativeBuild
+.cxx
+lint-results*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Intellij
+*.log
+out/
+
+# Other
+.classpath
+.project
+.settings/
+.vscode/
+*.class
+*.pyc
+*.pyo
+__pycache__/
+node_modules/

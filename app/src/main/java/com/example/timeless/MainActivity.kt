@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,7 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,13 +45,52 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
+import com.example.timeless.DisplayMode
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import java.time.DateTimeException
+
+class DateVisualTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val trimmed = if (text.text.length >= 8) text.text.substring(0, 8) else text.text
+        var out = ""
+        for (i in trimmed.indices) {
+            out += trimmed[i]
+            if (i == 3 || i == 5) {
+                if (i < trimmed.length - 1) {
+                    out += "-"
+                }
+            }
+        }
+
+        val numberOffsetTranslator = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                if (offset <= 3) return offset
+                if (offset <= 5) return offset + 1
+                if (offset <= 8) return offset + 2
+                return 10
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                if (offset <= 4) return offset
+                if (offset <= 7) return offset - 1
+                if (offset <= 10) return offset - 2
+                return 8
+            }
+        }
+
+        return TransformedText(AnnotatedString(out), numberOffsetTranslator)
+    }
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val systemDarkMode = androidx.compose.foundation.isSystemInDarkTheme()
+            val systemDarkMode = isSystemInDarkTheme()
             var isDarkMode by rememberSaveable { mutableStateOf(systemDarkMode) }
             TimeLESSTheme(darkTheme = isDarkMode) {
                 MainScreen(
@@ -69,6 +112,7 @@ fun MainScreen(
     val timeDisplay by viewModel.timeDisplay.collectAsState()
     val targetDateTime by viewModel.targetDateTime.collectAsState()
     var showDatePicker by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
 
     if (showDatePicker || targetDateTime == null) {
         DateSelectionScreen(
@@ -81,8 +125,8 @@ fun MainScreen(
             viewModel.updateTimeDifference()
             while (true) {
                 val nowMs = System.currentTimeMillis()
-                val delayMs = 1000 - (nowMs % 1000)
-                delay(delayMs)
+                val delayMs = 1000 - (nowMs % 1000 + 1)
+                delay(delayMs.coerceAtLeast(500))
                 viewModel.updateTimeDifference()
             }
         }
@@ -99,6 +143,52 @@ fun MainScreen(
                                 contentDescription = "Toggle dark mode"
                             )
                         }
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.Menu,
+                                contentDescription = "Display Mode"
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Days") },
+                                onClick = {
+                                    viewModel.setDisplayMode(DisplayMode.DAY)
+                                    showMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Hours") },
+                                onClick = {
+                                    viewModel.setDisplayMode(DisplayMode.HOUR)
+                                    showMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Minutes") },
+                                onClick = {
+                                    viewModel.setDisplayMode(DisplayMode.MINUTE)
+                                    showMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Seconds") },
+                                onClick = {
+                                    viewModel.setDisplayMode(DisplayMode.SECOND)
+                                    showMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Nanoseconds") },
+                                onClick = {
+                                    viewModel.setDisplayMode(DisplayMode.NANOSECOND)
+                                    showMenu = false
+                                }
+                            )
+                        }
                     }
                 )
             }
@@ -110,14 +200,13 @@ fun MainScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "${timeDisplay.years}y ${timeDisplay.months}m ${timeDisplay.days}d",
-                    style = TextStyle(fontSize = 36.sp)
-                )
-                Text(
-                    text = "${timeDisplay.hours}h ${timeDisplay.minutes}m ${timeDisplay.seconds}s",
-                    style = TextStyle(fontSize = 36.sp)
-                )
+                when (timeDisplay.displayMode) {
+                    DisplayMode.DAY -> Text(text = "${timeDisplay.days}d", style = TextStyle(fontSize = 36.sp))
+                    DisplayMode.HOUR -> Text(text = "${timeDisplay.hours}h", style = TextStyle(fontSize = 36.sp))
+                    DisplayMode.MINUTE -> Text(text = "${timeDisplay.minutes}m", style = TextStyle(fontSize = 36.sp))
+                    DisplayMode.SECOND -> Text(text = "${timeDisplay.seconds}s", style = TextStyle(fontSize = 36.sp))
+                    DisplayMode.NANOSECOND -> Text(text = "${timeDisplay.nanoseconds}ns", style = TextStyle(fontSize = 36.sp))
+                }
                 Button(
                     onClick = { showDatePicker = true },
                     modifier = Modifier.padding(top = 32.dp)
@@ -158,39 +247,35 @@ fun DateSelectionScreen(
             OutlinedTextField(
                 value = text,
                 onValueChange = { newText ->
-                    if (newText.length <= 10) {
-                        val currentText = text
-                        text = when {
-                            // Add first hyphen: YYYY -> YYYY-
-                            newText.length == 5 && currentText.length == 4 && newText.last() != '-' ->
-                                newText.substring(0, 4) + "-" + newText.last()
-                            // Add second hyphen: YYYY-MM -> YYYY-MM-
-                            newText.length == 8 && currentText.length == 7 && newText.last() != '-' ->
-                                newText.substring(0, 7) + "-" + newText.last()
-                            else -> newText
-                        }
+                    if (newText.length <= 8) {
+                        text = newText.filter { it.isDigit() }
                         isError = false
                     }
                 },
                 label = { Text("YYYY-MM-DD") },
                 placeholder = { Text("Enter date as YYYY-MM-DD") },
                 singleLine = true,
-                isError = isError
+                isError = isError,
+                visualTransformation = DateVisualTransformation()
             )
             Button(
                 onClick = {
                     try {
-                        val formatter = DateTimeFormatter.ISO_LOCAL_DATE
-                        val localDate = LocalDate.parse(text, formatter)
+                        val year = text.substring(0, 4).toInt()
+                        val month = text.substring(4, 6).toInt()
+                        val day = text.substring(6, 8).toInt()
+
+                        val localDate = LocalDate.of(year, month, day)
                         val selectedDateTime = localDate.atTime(0, 0, 0)
 
                         viewModel.setTargetDateTime(selectedDateTime)
                         viewModel.updateTimeDifference()
                         onDateSelected()
-                    } catch (e: DateTimeParseException) {
+                    } catch (e: Exception) {
                         isError = true
                     }
                 },
+                enabled = text.length == 8,
                 modifier = Modifier.padding(top = 16.dp)
             ) {
                 Text("Confirm Date")

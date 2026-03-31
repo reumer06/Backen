@@ -19,11 +19,15 @@ class TimerViewModel : ViewModel() {
         _targetDateTime.value = dateTime
     }
 
+    fun setDisplayMode(displayMode: DisplayMode) {
+        _timeDisplay.value = _timeDisplay.value.copy(displayMode = displayMode)
+    }
+
     fun updateTimeDifference() {
         val target = _targetDateTime.value
         if (target != null) {
             val now = LocalDateTime.now(deviceZone)
-            _timeDisplay.value = calculateTimeDisplay(now, target)
+            _timeDisplay.value = calculateTimeDisplay(now, target).copy(displayMode = _timeDisplay.value.displayMode)
         }
     }
 }

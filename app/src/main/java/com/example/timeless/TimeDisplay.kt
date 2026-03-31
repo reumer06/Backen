@@ -9,8 +9,14 @@ data class TimeDisplay(
     val days: Long = 0,
     val hours: Long = 0,
     val minutes: Long = 0,
-    val seconds: Long = 0
+    val seconds: Long = 0,
+    val nanoseconds: Long = 0,
+    val displayMode: DisplayMode = DisplayMode.DAY
 )
+
+enum class DisplayMode {
+    DAY, HOUR, MINUTE, SECOND, NANOSECOND
+}
 
 fun calculateTimeDisplay(startDateTime: LocalDateTime, endDateTime: LocalDateTime): TimeDisplay {
     val (start, end) = if (endDateTime.isAfter(startDateTime)) {
@@ -41,6 +47,7 @@ fun calculateTimeDisplay(startDateTime: LocalDateTime, endDateTime: LocalDateTim
 
     val remainingDuration = Duration.between(current, end)
     val totalSeconds = remainingDuration.seconds
+    val nano = remainingDuration.nano.toLong()
 
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
@@ -52,6 +59,7 @@ fun calculateTimeDisplay(startDateTime: LocalDateTime, endDateTime: LocalDateTim
         days = days,
         hours = hours,
         minutes = minutes,
-        seconds = seconds
+        seconds = seconds,
+        nanoseconds = nano
     )
 }
