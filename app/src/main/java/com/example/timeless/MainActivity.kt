@@ -91,7 +91,7 @@ fun MainScreen(
             modifier = Modifier.fillMaxSize(),
             topBar = {
                 TopAppBar(
-                    title = { Text("TimeLESS") },
+                    title = { },
                     actions = {
                         IconButton(onClick = onToggleDarkMode) {
                             Icon(
@@ -143,7 +143,7 @@ fun DateSelectionScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Enter Target Date") }
+                title = { }
             )
         }
     ) { innerPadding ->
