@@ -170,7 +170,8 @@ fun DateSelectionScreen(
                     if (selectedMillis != null) {
                         val instant = Instant.ofEpochMilli(selectedMillis)
                         val selectedDate = instant.atZone(deviceZone).toLocalDate()
-                        val selectedDateTime = selectedDate.atTime(23, 59, 59)
+                        val selectedDateTime = selectedDate.atTime(0, 0, 0)
+
                         viewModel.setTargetDateTime(selectedDateTime)
                         viewModel.updateTimeDifference()
                         onDateSelected()

@@ -13,33 +13,35 @@ data class TimeDisplay(
 )
 
 fun calculateTimeDisplay(startDateTime: LocalDateTime, endDateTime: LocalDateTime): TimeDisplay {
-    if (endDateTime <= startDateTime) {
-        return TimeDisplay()
+    val (start, end) = if (endDateTime.isAfter(startDateTime)) {
+        startDateTime to endDateTime
+    } else {
+        endDateTime to startDateTime
     }
 
-    var current = startDateTime
+    var current = start
     var years = 0L
     var months = 0L
     var days = 0L
 
-    while (current.plusYears(1) <= endDateTime) {
+    while (current.plusYears(1) <= end) {
         years++
         current = current.plusYears(1)
     }
 
-    while (current.plusMonths(1) <= endDateTime) {
+    while (current.plusMonths(1) <= end) {
         months++
         current = current.plusMonths(1)
     }
 
-    while (current.plusDays(1) <= endDateTime) {
+    while (current.plusDays(1) <= end) {
         days++
         current = current.plusDays(1)
     }
 
-    val remainingDuration = Duration.between(current, endDateTime)
+    val remainingDuration = Duration.between(current, end)
     val totalSeconds = remainingDuration.seconds
-    
+
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     val seconds = totalSeconds % 60
