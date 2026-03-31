@@ -12,15 +12,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.Button
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -38,8 +36,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.timeless.ui.theme.TimeLESSTheme
 import kotlinx.coroutines.delay
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -135,46 +136,59 @@ fun DateSelectionScreen(
     targetDateTime: LocalDateTime?,
     onDateSelected: () -> Unit = {}
 ) {
-    val deviceZone = ZoneId.systemDefault()
-    val initialSelectedDateMillis = remember(targetDateTime) {
-        targetDateTime
-            ?.toLocalDate()
-            ?.atStartOfDay(deviceZone)
-            ?.toInstant()
-            ?.toEpochMilli()
-    }
-    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialSelectedDateMillis)
+    var text by remember { mutableStateOf("") }
+    var isError by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Select Target Date") }
+                title = { Text("Enter Target Date") }
             )
         }
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            DatePicker(
-                state = datePickerState,
-                colors = DatePickerDefaults.colors()
+            OutlinedTextField(
+                value = text,
+                onValueChange = { newText ->
+                    if (newText.length <= 10) {
+                        val currentText = text
+                        text = when {
+                            // Add first hyphen: YYYY -> YYYY-
+                            newText.length == 5 && currentText.length == 4 && newText.last() != '-' ->
+                                newText.substring(0, 4) + "-" + newText.last()
+                            // Add second hyphen: YYYY-MM -> YYYY-MM-
+                            newText.length == 8 && currentText.length == 7 && newText.last() != '-' ->
+                                newText.substring(0, 7) + "-" + newText.last()
+                            else -> newText
+                        }
+                        isError = false
+                    }
+                },
+                label = { Text("YYYY-MM-DD") },
+                placeholder = { Text("Enter date as YYYY-MM-DD") },
+                singleLine = true,
+                isError = isError
             )
             Button(
                 onClick = {
-                    val selectedMillis = datePickerState.selectedDateMillis
-                    if (selectedMillis != null) {
-                        val instant = Instant.ofEpochMilli(selectedMillis)
-                        val selectedDate = instant.atZone(deviceZone).toLocalDate()
-                        val selectedDateTime = selectedDate.atTime(0, 0, 0)
+                    try {
+                        val formatter = DateTimeFormatter.ISO_LOCAL_DATE
+                        val localDate = LocalDate.parse(text, formatter)
+                        val selectedDateTime = localDate.atTime(0, 0, 0)
 
                         viewModel.setTargetDateTime(selectedDateTime)
                         viewModel.updateTimeDifference()
                         onDateSelected()
+                    } catch (e: DateTimeParseException) {
+                        isError = true
                     }
                 },
                 modifier = Modifier.padding(top = 16.dp)
