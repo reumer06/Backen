@@ -1,4 +1,4 @@
-# TimeLESS – AI Assistant Guide
+# AI Assistant Guide
 
 This is a minimal Jetpack Compose app that tracks the time elapsed from or remaining to a target date.
 
