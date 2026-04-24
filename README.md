@@ -1,3 +1,3 @@
 # Veridis-Quo 
 
-Track time elapsed since or remaining until any date you care about.
+Track time elapsed since any date you care about.
